@@ -3,6 +3,7 @@ import { useStore } from "../store";
 import { randInt } from "../lib/rng";
 import { Action, GameShell, Outcome, useBetGuard } from "../components/ui";
 import { tap } from "../lib/haptics";
+import { play } from "../lib/sound";
 
 // Europäischer Kessel (eine Null)
 const wheel = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
@@ -36,14 +37,14 @@ export default function Roulette({ onBack }: { onBack: () => void }) {
 
   const add = (k: BetKey) => {
     if (spinning || total + chip > player.balance) return;
-    tap(); setBets((b) => ({ ...b, [k]: (b[k] ?? 0) + chip }));
+    tap(); play("chip"); setBets((b) => ({ ...b, [k]: (b[k] ?? 0) + chip }));
   };
   const spin = () => {
     if (!total || !placeBet(total)) return;
     const n = wheel[randInt(0, 36)];
     const idx = wheel.indexOf(n);
     const seg = 360 / 37;
-    setSpinning(true); setRes(null);
+    setSpinning(true); setRes(null); play("spin");
     setAngle((a) => a - (a % 360) + 360 * 6 + (360 - idx * seg));
     setTimeout(() => {
       let payout = 0;

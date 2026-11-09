@@ -70,6 +70,16 @@ export function Settings({ replayIntro }: { replayIntro: () => void }) {
       <h2 className="sec">Allgemein</h2>
       <div className="card">
         <div className="row">
+          <span><b>Sounds</b><small>Klicks, Karten, Gewinne und Effekte</small></span>
+          <button role="switch" aria-checked={s.settings.sound} className={`switch ${s.settings.sound ? "is-on" : ""}`} onClick={() => setSettings({ sound: !s.settings.sound })} />
+        </div>
+        {s.settings.sound && (
+          <div className="row">
+            <label htmlFor="vol"><b>Lautstärke</b></label>
+            <input id="vol" className="range range--sm" data-lenis-prevent type="range" min={0} max={1} step={0.05} value={s.settings.volume} onChange={(e) => setSettings({ volume: Number(e.target.value) })} />
+          </div>
+        )}
+        <div className="row">
           <span><b>Haptik</b><small>Vibration bei Aktionen (iPhone)</small></span>
           <button role="switch" aria-checked={s.settings.haptics} className={`switch ${s.settings.haptics ? "is-on" : ""}`} onClick={() => setSettings({ haptics: !s.settings.haptics })} />
         </div>

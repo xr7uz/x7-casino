@@ -3,6 +3,7 @@ import { useStore } from "../store";
 import { rand, round2 } from "../lib/rng";
 import { Action, BetInput, GameShell, Outcome, useBetGuard } from "../components/ui";
 import { tap } from "../lib/haptics";
+import { play, riserSet, riserStart, riserStop } from "../lib/sound";
 
 type Phase = "idle" | "flying" | "crashed" | "cashed";
 
@@ -22,7 +23,7 @@ export default function Crash({ onBack }: { onBack: () => void }) {
   const pts = useRef<number[]>([]);
   const { done } = useBetGuard();
 
-  useEffect(() => () => cancelAnimationFrame(raf.current), []);
+  useEffect(() => () => { cancelAnimationFrame(raf.current); riserStop(); }, []);
 
   const finish = (payout: number, crash: number) => {
     setRes({ bet, payout });
@@ -40,22 +41,25 @@ export default function Crash({ onBack }: { onBack: () => void }) {
     setRes(null);
     setPhase("flying");
     setRunning(true);
+    riserStart();
     start.current = performance.now();
     const step = (t: number) => {
       const sec = (t - start.current) / 1000;
       const cur = Math.pow(Math.E, 0.16 * sec * (1 + sec * 0.06));
       pts.current.push(cur);
+      riserSet(cur);
       if (!cashed.current && auto > 1 && cur >= auto && auto < crashAt.current) {
         cashed.current = true;
         setPhase("cashed");
-        tap("medium");
+        tap("medium"); play("coin");
         finish(round2(bet * auto), crashAt.current);
       }
       if (cur >= crashAt.current) {
         setM(crashAt.current);
-        if (!cashed.current) { setPhase("crashed"); finish(0, crashAt.current); }
+        if (!cashed.current) { setPhase("crashed"); play("boom"); finish(0, crashAt.current); }
         else setPhase("cashed");
         tap("heavy");
+        riserStop();
         setRunning(false);
         return;
       }
@@ -69,6 +73,7 @@ export default function Crash({ onBack }: { onBack: () => void }) {
     if (phase !== "flying" || cashed.current) return;
     cashed.current = true;
     setPhase("cashed");
+    play("coin");
     finish(round2(bet * m), crashAt.current);
   };
 

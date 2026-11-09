@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useStore } from "../store";
 import { pickWeighted, rand, round2 } from "../lib/rng";
+import { play } from "../lib/sound";
 import { Action, BetInput, GameShell, Outcome, useBetGuard } from "../components/ui";
 
 // Gegenstände mit Seltenheit; Werte werden auf den RTP normiert
@@ -36,7 +37,7 @@ export default function Loot({ onBack }: { onBack: () => void }) {
     const pick = () => pickWeighted(ITEMS.map((x, i) => ({ item: i, w: x.w })));
     const win = pick();
     const s = Array.from({ length: 40 }, (_, i) => (i === 34 ? win : pick()));
-    setStrip(s); setOffset(0); setBusy(true); setWon(null); setRes(null);
+    setStrip(s); setOffset(0); setBusy(true); setWon(null); setRes(null); play("spin");
     requestAnimationFrame(() => requestAnimationFrame(() => setOffset(34 * CELL + rand() * (CELL - 20) - (CELL - 20) / 2)));
     setTimeout(() => {
       const payout = round2(bet * values[win]);

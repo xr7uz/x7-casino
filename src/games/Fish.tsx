@@ -3,6 +3,7 @@ import { useStore } from "../store";
 import { rand, round2 } from "../lib/rng";
 import { BetInput, GameShell } from "../components/ui";
 import { tap } from "../lib/haptics";
+import { play } from "../lib/sound";
 
 type FishT = { id: number; x: number; y: number; vx: number; r: number; mult: number; color: string; wob: number };
 type Bullet = { x: number; y: number; vx: number; vy: number; bet: number; born: number };
@@ -85,7 +86,7 @@ export default function Fish({ onBack }: { onBack: () => void }) {
           st("fish", b.bet, payout);
           setStats((s) => ({ shots: s.shots + 1, catches: s.catches + (caught ? 1 : 0), net: round2(s.net + payout - b.bet) }));
           pops.current.push({ x: hit.x, y: hit.y, text: caught ? `+${payout}` : "×", t, win: caught });
-          if (caught) { fish.current = fish.current.filter((f) => f !== hit); tap("medium"); }
+          if (caught) { fish.current = fish.current.filter((f) => f !== hit); tap("medium"); play("coin"); } else play("tick");
           return false;
         }
         if (t - b.born > 5000 || b.y > H) { st("fish", b.bet, b.bet); return false; } // nichts getroffen: Einsatz zurück
@@ -117,7 +118,7 @@ export default function Fish({ onBack }: { onBack: () => void }) {
     if (a > -0.1 || a < -Math.PI + 0.1) return;
     aim.current = a;
     if (!api.current.placeBet(betRef.current)) return;
-    tap();
+    tap(); play("press");
     bullets.current.push({ x: W / 2 + Math.cos(a) * 40, y: H - 18 + Math.sin(a) * 40, vx: Math.cos(a) * 420, vy: Math.sin(a) * 420, bet: betRef.current, born: performance.now() });
   };
 

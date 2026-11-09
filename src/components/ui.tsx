@@ -4,6 +4,7 @@ import { useStore } from "../store";
 import { gameById } from "../games/registry";
 import { isRed, rankLabel, type Card } from "../lib/cards";
 import { tap } from "../lib/haptics";
+import { play } from "../lib/sound";
 
 /** Rahmen jedes Spiels: Kopfzeile mit Zurück, Titel, Favorit und Regeln. */
 export function GameShell({ id, onBack, rules, children }: { id: string; onBack: () => void; rules: string; children: ReactNode }) {
@@ -68,6 +69,8 @@ export function Action({ children, onClick, disabled, tone = "primary" }: { chil
 
 /** Spielkarte */
 export function PlayingCard({ c, hidden, small }: { c?: Card; hidden?: boolean; small?: boolean }) {
+  const id = c ? `${c.r}${c.s}` : "";
+  useEffect(() => { if (id) play("deal"); }, [id]);
   if (!c || hidden) return <div className={`pcard pcard--back ${small ? "pcard--sm" : ""}`} aria-label="verdeckte Karte" />;
   return (
     <div className={`pcard ${isRed(c) ? "pcard--red" : ""} ${small ? "pcard--sm" : ""}`} aria-label={`${rankLabel(c.r)} ${c.s}`}>
@@ -84,6 +87,7 @@ export function Outcome({ bet, payout, text }: { bet: number; payout: number; te
   const net = payout - bet;
   const kind = net > 0 ? "win" : net === 0 ? "push" : "loss";
   const big = bet > 0 && payout >= bet * 5;
+  useEffect(() => { play(big ? "bigwin" : kind === "win" ? "win" : kind === "push" ? "push" : "loss"); }, [big, kind]);
   return (
     <div className={`outcome outcome--${kind}`} role="status">
       {kind === "win" && <Sparks />}

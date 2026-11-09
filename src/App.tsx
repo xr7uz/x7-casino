@@ -4,6 +4,8 @@ import { useStore } from "./store";
 import { tap } from "./lib/haptics";
 import { useAnimatedNumber } from "./components/ui";
 import { enableSmooth, toTop } from "./lib/smooth";
+import { play } from "./lib/sound";
+import { LuVolume2, LuVolumeX } from "react-icons/lu";
 import { Lobby } from "./screens/Lobby";
 import { Party } from "./screens/Party";
 import { Stats } from "./screens/Stats";
@@ -42,7 +44,10 @@ export default function App() {
   useEffect(() => { if (!s.online) setOnlineSeen(false); }, [s.online]);
 
   useEffect(() => { enableSmooth(s.settings.smooth); }, [s.settings.smooth]);
-  useEffect(() => { toTop(); }, [tab, game]);
+  useEffect(() => { toTop(); if (game) play("whoosh"); }, [tab, game]);
+  useEffect(() => { if (needsHandover) play("reveal"); }, [needsHandover]);
+  useEffect(() => { if (s.party.tournament.active && s.party.tournament.finished) play("fanfare"); }, [s.party.tournament.active, s.party.tournament.finished]);
+  useEffect(() => { if (s.online?.finished) play("fanfare"); }, [s.online?.finished]);
 
   const Game = game ? gameComponents[game] : null;
   const t = s.party.tournament;
@@ -66,7 +71,7 @@ export default function App() {
         <Balance value={player.balance} fmt={fmt} />
         {player.balance < 1 && canRefill
           ? <button className="pill" onClick={refill}><LuRefreshCw /> Auffüllen</button>
-          : <span className="topbar__spacer" />}
+          : <button className="iconbtn iconbtn--sm topbar__mute" onClick={() => setSettings({ sound: !s.settings.sound })} aria-label={s.settings.sound ? "Sounds aus" : "Sounds an"}>{s.settings.sound ? <LuVolume2 /> : <LuVolumeX />}</button>}
       </header>
 
       <main className="main" key={game ?? tab}>

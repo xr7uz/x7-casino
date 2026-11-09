@@ -4,6 +4,7 @@ import { useStore } from "../store";
 import { round2, shuffle } from "../lib/rng";
 import { Action, BetInput, GameShell, Outcome, useBetGuard } from "../components/ui";
 import { tap } from "../lib/haptics";
+import { play } from "../lib/sound";
 
 const N = 25;
 export function minesMult(mines: number, picks: number, edge: number) {
@@ -33,12 +34,12 @@ export default function Mines({ onBack }: { onBack: () => void }) {
   const pick = (i: number) => {
     if (!playing || open.includes(i)) return;
     if (board![i]) {
-      tap("heavy");
+      tap("heavy"); play("boom");
       setOpen((o) => [...o, i]); setOver(true);
       setRes({ bet, payout: 0 }); settle("mines", bet, 0);
       return;
     }
-    tap();
+    tap(); play("reveal");
     const o = [...open, i];
     setOpen(o);
     if (o.length === N - mines) cash(o.length);

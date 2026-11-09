@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { setHaptics, success } from "./lib/haptics";
+import { setSound } from "./lib/sound";
 import { newRoomCode, pushLive, type Result, type RoomInfo } from "./lib/online";
 
 /**
@@ -26,6 +27,8 @@ export type Settings = {
   haptics: boolean;
   training: boolean;
   smooth: boolean; // Premium Smooth Scrolling
+  sound: boolean;
+  volume: number; // 0–1
   edge: number; // Hausvorteil in Prozent für mathematische Spiele (0–10)
   onboarded: boolean;
 };
@@ -73,7 +76,7 @@ function initial(): State {
     online: null,
     players: [p],
     activeId: p.id,
-    settings: { theme: "noir", currency: "◆", haptics: true, smooth: true, training: false, edge: 3, onboarded: false },
+    settings: { theme: "noir", currency: "◆", haptics: true, smooth: true, sound: true, volume: 0.7, training: false, edge: 3, onboarded: false },
     party: { enabled: false, roundsPerTurn: 1, tournament: { active: false, roundsEach: 10, startBalance: 1000, finished: false } },
     favorites: [],
     history: [],
@@ -138,6 +141,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [s]);
 
   useEffect(() => { setHaptics(s.settings.haptics); }, [s.settings.haptics]);
+  useEffect(() => { setSound(s.settings.sound, s.settings.volume); }, [s.settings.sound, s.settings.volume]);
   useEffect(() => { document.documentElement.dataset.theme = s.settings.theme; }, [s.settings.theme]);
 
   const basePlayer = s.players.find((p) => p.id === s.activeId) ?? s.players[0];

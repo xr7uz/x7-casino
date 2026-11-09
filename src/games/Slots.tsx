@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useStore } from "../store";
 import { pickWeighted, round2 } from "../lib/rng";
+import { play } from "../lib/sound";
 import { Action, BetInput, GameShell, Outcome, useBetGuard } from "../components/ui";
 
 // Symbole mit Gewicht (Häufigkeit) und Basis-Auszahlung für drei gleiche
@@ -37,6 +38,7 @@ export default function Slots({ onBack }: { onBack: () => void }) {
     const pick = () => pickWeighted(SYM.map((x, i) => ({ item: i, w: x.w })));
     const r = [pick(), pick(), pick()];
     setSpin(true); setRes(null);
+    for (let i = 0; i < 14; i++) setTimeout(() => play("tick"), i * 75);
     setTimeout(() => {
       setReels(r);
       let payout = 0, text = "";

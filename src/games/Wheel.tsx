@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useStore } from "../store";
 import { randInt, round2 } from "../lib/rng";
+import { play } from "../lib/sound";
 import { Action, BetInput, GameShell, Outcome, useBetGuard } from "../components/ui";
 
 type Risk = "low" | "mid" | "high";
@@ -32,7 +33,7 @@ export default function Wheel({ onBack }: { onBack: () => void }) {
     if (!placeBet(bet)) return;
     const i = randInt(0, SEG - 1);
     const seg = 360 / SEG;
-    setSpinning(true); setRes(null);
+    setSpinning(true); setRes(null); play("spin");
     setAngle((a) => a - (a % 360) + 360 * 5 + (360 - i * seg));
     setTimeout(() => {
       const payout = round2(bet * segs[i]);

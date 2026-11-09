@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useStore } from "../store";
 import { binom, round2, shuffle } from "../lib/rng";
+import { play } from "../lib/sound";
 import { Action, BetInput, GameShell, Outcome, useBetGuard } from "../components/ui";
 
 const POOL = 40, DRAW = 10;
@@ -36,7 +37,7 @@ export default function Keno({ onBack }: { onBack: () => void }) {
     if (!picks.length || !placeBet(bet)) return;
     const d = shuffle(Array.from({ length: POOL }, (_, i) => i + 1)).slice(0, DRAW);
     setBusy(true); setDrawn([]); setRes(null);
-    d.forEach((n, i) => setTimeout(() => setDrawn((x) => [...x, n]), 120 * (i + 1)));
+    d.forEach((n, i) => setTimeout(() => { setDrawn((x) => [...x, n]); play(picks.includes(n) ? "reveal" : "tick"); }, 120 * (i + 1)));
     setTimeout(() => {
       const hits = d.filter((n) => picks.includes(n)).length;
       const payout = round2(bet * pay[hits]);

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useStore } from "../store";
 import { rand, round2 } from "../lib/rng";
+import { play } from "../lib/sound";
 import { Action, BetInput, GameShell, Outcome, useBetGuard } from "../components/ui";
 
 export default function Dice({ onBack }: { onBack: () => void }) {
@@ -20,6 +21,7 @@ export default function Dice({ onBack }: { onBack: () => void }) {
     if (!placeBet(bet)) return;
     setRolling(true);
     setRes(null);
+    for (let i = 0; i < 6; i++) setTimeout(() => play("tick"), i * 65);
     const r = Math.floor(rand() * 10000) / 100; // 0.00–99.99
     setTimeout(() => {
       const win = over ? r > target : r < target;

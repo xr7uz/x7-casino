@@ -3,6 +3,7 @@ import { useStore } from "../store";
 import { binom, rand, round2 } from "../lib/rng";
 import { Action, BetInput, GameShell, Outcome, useBetGuard } from "../components/ui";
 import { tap } from "../lib/haptics";
+import { play } from "../lib/sound";
 
 type Risk = "low" | "mid" | "high";
 // Grundform der Auszahlungen (Mitte → Rand), wird auf den eingestellten RTP normiert
@@ -38,6 +39,7 @@ export default function Plinko({ onBack }: { onBack: () => void }) {
     for (let r = 0; r < rows; r++) { const right = rand() < 0.5 ? 1 : 0; pos += right; path.push(pos); }
     const ball = { id: Date.now() + Math.random(), path, slot: pos, bet };
     setBalls((b) => [...b, ball]);
+    for (let r = 0; r < rows; r++) setTimeout(() => play("tick"), (r + 1) * ((rows * 110) / rows));
     const ms = rows * 110 + 150;
     setTimeout(() => {
       const payout = round2(ball.bet * mult[ball.slot]);

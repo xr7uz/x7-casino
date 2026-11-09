@@ -108,7 +108,7 @@ svg { flex: none; }
 }
 .balance--up { background: color-mix(in srgb, var(--win) 22%, var(--surface-2)); border-color: var(--win); transform: scale(1.06); }
 .balance--down { background: color-mix(in srgb, var(--loss) 14%, var(--surface-2)); border-color: color-mix(in srgb, var(--loss) 60%, transparent); }
-.topbar .pill { justify-self: end; }
+.topbar .pill, .topbar__mute { justify-self: end; }
 .topbar__spacer { display: block; }
 
 /* ---------- Inhalt & Effekt 3: Übergänge ---------- */

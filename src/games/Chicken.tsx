@@ -4,6 +4,7 @@ import { useStore } from "../store";
 import { rand, round2 } from "../lib/rng";
 import { Action, BetInput, GameShell, Outcome, useBetGuard } from "../components/ui";
 import { tap } from "../lib/haptics";
+import { play } from "../lib/sound";
 
 type Diff = "easy" | "mid" | "hard";
 const crashP: Record<Diff, number> = { easy: 1 / 25, mid: 3 / 25, hard: 6 / 25 };
@@ -25,9 +26,9 @@ export default function Chicken({ onBack }: { onBack: () => void }) {
   const step = () => {
     const next = pos + 1;
     if (rand() < crashP[diff]) {
-      tap("heavy"); setDead(next); setActive(false); setRes({ bet, payout: 0 }); settle("chicken", bet, 0); return;
+      tap("heavy"); play("boom"); setDead(next); setActive(false); setRes({ bet, payout: 0 }); settle("chicken", bet, 0); return;
     }
-    tap(); setPos(next);
+    tap(); play("reveal"); setPos(next);
     if (next === LANES) cash(next);
   };
   const cash = (at = pos) => {

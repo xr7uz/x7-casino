@@ -1,9 +1,11 @@
-/** Haptisches Feedback über Capacitor (iPhone). Im Browser ohne Wirkung. */
+/** Haptisches Feedback über Capacitor (iPhone) plus passender Klick-Sound. */
+import { play } from "./sound";
 type Style = "light" | "medium" | "heavy";
 let enabled = true;
 export const setHaptics = (on: boolean) => { enabled = on; };
 
 export async function tap(style: Style = "light") {
+  play(style === "heavy" ? "thud" : style === "medium" ? "press" : "click");
   if (!enabled) return;
   try {
     const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
