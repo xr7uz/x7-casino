@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ComponentType } from "react";
 import { LuChartPie, LuCrown, LuHouse, LuSettings, LuUsers, LuRefreshCw } from "react-icons/lu";
 import { useStore } from "./store";
+import { games } from "./games/registry";
+import { achievements } from "./lib/progress";
 import { tap } from "./lib/haptics";
 import { useAnimatedNumber } from "./components/ui";
 import { enableSmooth, toTop } from "./lib/smooth";
@@ -26,21 +28,38 @@ import Dice from "./games/Dice";
 import Slots from "./games/Slots";
 import DragonTiger from "./games/DragonTiger";
 import Loot from "./games/Loot";
+import Tower from "./games/Tower";
+import Coinflip from "./games/Coinflip";
+import Limbo from "./games/Limbo";
+import VideoPoker from "./games/VideoPoker";
+import Race from "./games/Race";
 
 const gameComponents: Record<string, ComponentType<{ onBack: () => void }>> = {
   crash: Crash, blackjack: Blackjack, poker: Poker, mines: Mines, roulette: Roulette, plinko: Plinko, fish: Fish,
   hilo: HiLo, baccarat: Baccarat, keno: Keno, wheel: Wheel, chicken: Chicken, dice: Dice, slots: Slots,
-  dragontiger: DragonTiger, loot: Loot,
+  dragontiger: DragonTiger, loot: Loot, tower: Tower, coinflip: Coinflip, limbo: Limbo, videopoker: VideoPoker, race: Race,
 };
 
 type Tab = "lobby" | "party" | "stats" | "settings";
 
 export default function App() {
-  const { s, player, fmt, setSettings, needsHandover, nextPlayer, endTournament, refill, canRefill } = useStore();
+  const { s, player, fmt, setSettings, needsHandover, nextPlayer, endTournament, refill, canRefill, markUnlocked } = useStore();
   const [tab, setTab] = useState<Tab>("lobby");
   const [game, setGame] = useState<string | null>(null);
   const [intro, setIntro] = useState(!s.settings.onboarded);
   const [onlineSeen, setOnlineSeen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  // Neue Erfolge erkennen und kurz anzeigen
+  useEffect(() => {
+    if (s.online) return;
+    const got = achievements.filter((a) => a.done(player) && !(s.unlocked ?? []).includes(a.id));
+    if (!got.length) return;
+    markUnlocked(got.map((a) => a.id));
+    if ((s.unlocked ?? []).length || got.length < 3) { setToast(got.map((a) => a.name).join(" · ")); play("fanfare"); }
+    const t = setTimeout(() => setToast(null), 2800);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [player.rounds, player.balance]);
   useEffect(() => { if (!s.online) setOnlineSeen(false); }, [s.online]);
 
   useEffect(() => { enableSmooth(s.settings.smooth); }, [s.settings.smooth]);
@@ -137,6 +156,8 @@ export default function App() {
         </div>
       )}
 
+      {toast && <div className="toast" role="status"><span>Erfolg freigeschaltet</span><b>{toast}</b></div>}
+
       {intro && (
         <div className="overlay" role="dialog" aria-modal="true" aria-labelledby="intro-t">
           <div className="sheet sheet--intro">
@@ -145,7 +166,7 @@ export default function App() {
             <ul className="intro__list">
               <li><b>Nur Spielgeld.</b> Kein echtes Geld, keine Käufe, keine Auszahlung.</li>
               <li><b>Alles gratis.</b> Credits jederzeit auffüllen oder frei einstellen.</li>
-              <li><b>16 Spiele</b> von Blackjack bis Fischjagd – mit ehrlicher Mathematik.</li>
+              <li><b>{games.length} Spiele</b> von Blackjack bis Pferderennen – mit einstellbaren Quoten.</li>
               <li><b>Party-Modus:</b> spielt zu mehreren auf einem Handy gegeneinander.</li>
             </ul>
             <p className="muted">Diese App simuliert Glücksspiel und ist für Erwachsene gedacht.</p>

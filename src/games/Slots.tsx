@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useStore } from "../store";
+import { forced, kindOf } from "../lib/control";
 import { pickWeighted, round2 } from "../lib/rng";
 import { play } from "../lib/sound";
 import { Action, BetInput, GameShell, Outcome, useBetGuard } from "../components/ui";
@@ -25,7 +26,8 @@ function paytable(edge: number) {
 }
 
 export default function Slots({ onBack }: { onBack: () => void }) {
-  const { placeBet, settle, edge } = useStore();
+  const { placeBet, settle, edgeFor, takeControl } = useStore();
+  const edge = edgeFor("slots");
   const [bet, setBet] = useState(10);
   const [reels, setReels] = useState([0, 3, 5]);
   const [spin, setSpin] = useState(false);
@@ -36,7 +38,8 @@ export default function Slots({ onBack }: { onBack: () => void }) {
   const go = () => {
     if (!placeBet(bet)) return;
     const pick = () => pickWeighted(SYM.map((x, i) => ({ item: i, w: x.w })));
-    const r = [pick(), pick(), pick()];
+    const payOf = (r: number[]) => (r[0] === r[1] && r[1] === r[2] ? pay.three[r[0]] : r.filter((x) => x === 0).length === 2 ? pay.cherry2 : 0);
+    const r = forced(takeControl(), () => [pick(), pick(), pick()], (x) => kindOf(1, payOf(x)));
     setSpin(true); setRes(null);
     for (let i = 0; i < 14; i++) setTimeout(() => play("tick"), i * 75);
     setTimeout(() => {

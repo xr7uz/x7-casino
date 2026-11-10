@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useStore, START_BALANCE, type Theme } from "../store";
+import { Control, Odds } from "./Control";
 
 const themes: { id: Theme; name: string; desc: string }[] = [
   { id: "noir", name: "X7 Noir", desc: "Fast Schwarz mit Burgund und Pink." },
@@ -42,15 +43,11 @@ export function Settings({ replayIntro }: { replayIntro: () => void }) {
         )}
       </div>
 
-      <h2 className="sec">Quoten</h2>
-      <div className="card">
-        <div className="row">
-          <label htmlFor="edge"><b>Hausvorteil</b><small>Gilt für Crash, Mines, Würfel, Slots, Keno, Rad, Pinball, Hi-Lo, Chicken, Fischjagd, Loot-Boxen</small></label>
-          <b>{s.settings.edge.toFixed(1)} %</b>
-        </div>
-        <input id="edge" className="range" data-lenis-prevent type="range" min={0} max={10} step={0.5} value={s.settings.edge} onChange={(e) => setSettings({ edge: Number(e.target.value) })} />
-        <p className="muted">0 % = faires Spiel (RTP 100 %). Kartenspiele und Roulette folgen festen Regeln und sind davon ausgenommen.</p>
-      </div>
+      <h2 className="sec">Spielquoten</h2>
+      <Odds />
+
+      <h2 className="sec">Ergebnisse steuern</h2>
+      <Control />
 
       <h2 className="sec">Darstellung</h2>
       <div className="card">

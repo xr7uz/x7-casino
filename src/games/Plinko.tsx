@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useStore } from "../store";
+import { forced, kindOf } from "../lib/control";
 import { binom, rand, round2 } from "../lib/rng";
 import { Action, BetInput, GameShell, Outcome, useBetGuard } from "../components/ui";
 import { tap } from "../lib/haptics";
@@ -22,7 +23,8 @@ function table(rows: number, risk: Risk, edge: number) {
 type Ball = { id: number; path: number[]; slot: number; bet: number };
 
 export default function Plinko({ onBack }: { onBack: () => void }) {
-  const { placeBet, settle, edge } = useStore();
+  const { placeBet, settle, edgeFor, takeControl } = useStore();
+  const edge = edgeFor("plinko");
   const [bet, setBet] = useState(10);
   const [rows, setRows] = useState(12);
   const [risk, setRisk] = useState<Risk>("mid");
@@ -34,9 +36,12 @@ export default function Plinko({ onBack }: { onBack: () => void }) {
 
   const drop = () => {
     if (!placeBet(bet)) return;
-    const path: number[] = [];
-    let pos = 0;
-    for (let r = 0; r < rows; r++) { const right = rand() < 0.5 ? 1 : 0; pos += right; path.push(pos); }
+    const { path, pos } = forced(takeControl(), () => {
+      const path: number[] = [];
+      let pos = 0;
+      for (let r = 0; r < rows; r++) { const right = rand() < 0.5 ? 1 : 0; pos += right; path.push(pos); }
+      return { path, pos };
+    }, (x) => kindOf(1, mult[x.pos]));
     const ball = { id: Date.now() + Math.random(), path, slot: pos, bet };
     setBalls((b) => [...b, ball]);
     for (let r = 0; r < rows; r++) setTimeout(() => play("tick"), (r + 1) * ((rows * 110) / rows));

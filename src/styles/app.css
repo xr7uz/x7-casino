@@ -346,3 +346,44 @@ svg { flex: none; }
 .code--sm { font-size: 0.72rem; font-weight: 600; letter-spacing: 0; text-align: left; }
 .note { text-align: center; font-size: 0.85rem; font-weight: 600; color: var(--accent); }
 a.action { text-decoration: none; color: inherit; }
+
+/* ---------- Quoten & Steuerung ---------- */
+.presets { display: grid; gap: 8px; }
+.preset { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; text-align: left; padding: 12px 14px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--surface-2); cursor: pointer; transition: border-color 200ms var(--ease), background-color 200ms var(--ease); }
+.preset span { display: grid; gap: 2px; }
+.preset small { color: var(--soft); font-size: 0.78rem; }
+.preset.is-on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface-2)); }
+.preset__radio { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--soft); position: relative; }
+.preset.is-on .preset__radio { border-color: var(--accent); }
+.preset.is-on .preset__radio::after { content: ""; position: absolute; inset: 4px; border-radius: 50%; background: var(--accent); animation: pop 250ms var(--ease-out); }
+.preset__n { width: 30px; height: 30px; border-radius: 10px; display: grid !important; place-items: center; background: var(--surface); font-weight: 800; font-size: 0.85rem; }
+.pergame { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.pergame li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.stepper { display: inline-flex; align-items: center; gap: 6px; }
+.stepper b { min-width: 52px; text-align: center; font-variant-numeric: tabular-nums; }
+.seq { display: flex; flex-wrap: wrap; gap: 6px; min-height: 36px; padding: 10px; border-radius: 12px; background: var(--surface-2); }
+.seq__item { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; font-weight: 800; font-size: 0.8rem; animation: pop 250ms var(--ease-out); }
+.seq__item--W { background: color-mix(in srgb, var(--win) 25%, transparent); color: var(--win); }
+.seq__item--L { background: color-mix(in srgb, var(--loss) 22%, transparent); color: var(--loss); }
+.seq__item.is-done { opacity: 0.3; }
+.seq__item.is-next { box-shadow: 0 0 0 2px var(--accent); }
+.seq__add--w { color: var(--win); } .seq__add--l { color: var(--loss); }
+.locknote { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; color: var(--accent); }
+.locknote svg { width: 16px; height: 16px; }
+
+/* ---------- Level & Erfolge ---------- */
+.level { gap: 10px; }
+.level__head { display: flex; align-items: center; gap: 12px; }
+.level__head span:last-child { display: grid; gap: 2px; }
+.level__head small { color: var(--soft); font-size: 0.78rem; }
+.level__badge { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; font-weight: 900; font-size: 1.3rem; color: #fff; background: linear-gradient(135deg, #800021, #c24366, #ff69b4); box-shadow: 0 8px 20px -8px #c24366; }
+.ach { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ach li { display: grid; gap: 4px; padding: 12px; border-radius: 14px; background: var(--surface-2); opacity: 0.45; filter: grayscale(1); transition: opacity 300ms var(--ease); }
+.ach li.is-done { opacity: 1; filter: none; border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); }
+.ach b { font-size: 0.88rem; } .ach small { font-size: 0.72rem; color: var(--soft); }
+.ach__icon { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
+.ach__icon svg { width: 18px; height: 18px; }
+.toast { position: fixed; z-index: 95; left: 50%; top: calc(var(--top) + 64px); transform: translateX(-50%); display: grid; justify-items: center; gap: 2px; padding: 12px 20px; border-radius: 18px;
+  background: linear-gradient(135deg, #800021, #c24366); color: #fff; box-shadow: 0 16px 40px -12px rgba(194, 67, 102, .7); animation: toast 2.8s var(--ease-out) both; max-width: calc(100% - 32px); text-align: center; }
+.toast span { font-size: 0.7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .85; }
+@keyframes toast { 0% { opacity: 0; transform: translate(-50%, -16px) scale(.95); } 10%, 85% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, -10px); } }

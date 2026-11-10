@@ -1,5 +1,5 @@
 import type { IconType } from "react-icons";
-import { LuChartLine, LuSpade, LuClub, LuGem, LuTarget, LuCircleDot, LuFish, LuArrowUpDown, LuDiamond, LuGrid3X3, LuLoaderPinwheel, LuBird, LuDices, LuCherry, LuSwords, LuPackageOpen } from "react-icons/lu";
+import { LuCastle, LuCoins, LuGauge, LuLayers, LuFlag, LuChartLine, LuSpade, LuClub, LuGem, LuTarget, LuCircleDot, LuFish, LuArrowUpDown, LuDiamond, LuGrid3X3, LuLoaderPinwheel, LuBird, LuDices, LuCherry, LuSwords, LuPackageOpen } from "react-icons/lu";
 
 export type GameMeta = {
   id: string;
@@ -11,7 +11,9 @@ export type GameMeta = {
   party: boolean;
 };
 
-const math = (e: number) => `${(e * 100).toFixed(1).replace(".0", "")} % Bank`;
+const math = (e: number) => (e < 0 ? `${(-e * 100).toFixed(1).replace(".0", "")} % Spielervorteil` : e === 0 ? "Fair · 0 %" : `${(e * 100).toFixed(1).replace(".0", "")} % Bank`);
+/** Spiele, deren Quote über den Hausvorteil einstellbar ist */
+export const tunable = ["tower", "coinflip", "limbo", "race", "crash", "mines", "plinko", "fish", "hilo", "keno", "wheel", "chicken", "dice", "slots", "loot"];
 
 export const games: GameMeta[] = [
   { id: "crash", name: "Crash", desc: "Steig aus, bevor es platzt.", icon: LuChartLine, hue: "#ff69b4", edgeLabel: math, party: true },
@@ -29,6 +31,11 @@ export const games: GameMeta[] = [
   { id: "dice", name: "Würfel", desc: "Sag an: darüber oder darunter.", icon: LuDices, hue: "#4ea8ff", edgeLabel: math, party: true },
   { id: "slots", name: "Slots", desc: "Drei Walzen, eine Gewinnlinie.", icon: LuCherry, hue: "#ffb02e", edgeLabel: math, party: true },
   { id: "dragontiger", name: "Dragon Tiger", desc: "Eine Karte je Seite. Die höhere gewinnt.", icon: LuSwords, hue: "#ff5a3c", edgeLabel: () => "3,7 % Bank", party: true },
+  { id: "tower", name: "Tower", desc: "Klettere hoch, meide die Fallen.", icon: LuCastle, hue: "#ff8fab", edgeLabel: math, party: true },
+  { id: "coinflip", name: "Münzwurf", desc: "Kopf oder Zahl – Serie verdoppelt.", icon: LuCoins, hue: "#ffd166", edgeLabel: math, party: true },
+  { id: "limbo", name: "Limbo", desc: "Wähle ein Ziel und hoffe, dass es reicht.", icon: LuGauge, hue: "#5ec2ff", edgeLabel: math, party: true },
+  { id: "videopoker", name: "Video Poker", desc: "Jacks or Better: halten, ziehen, gewinnen.", icon: LuLayers, hue: "#b48cff", edgeLabel: () => "Zahlt 9/6", party: true },
+  { id: "race", name: "Pferderennen", desc: "Sechs Pferde, eine Ziellinie.", icon: LuFlag, hue: "#7ee08a", edgeLabel: math, party: true },
   { id: "loot", name: "Loot-Boxen", desc: "Öffne eine Box, bete um die Uhr.", icon: LuPackageOpen, hue: "#c77dff", edgeLabel: math, party: true },
 ];
 export const gameById = (id: string) => games.find((g) => g.id === id)!;

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useStore } from "../store";
+import { forced, kindOf } from "../lib/control";
 import { deck, type Card } from "../lib/cards";
 import { round2 } from "../lib/rng";
 import { Action, BetInput, GameShell, Outcome, PlayingCard, useBetGuard } from "../components/ui";
@@ -9,7 +10,7 @@ const val = (c: Card) => (c.r >= 10 && c.r <= 13 ? 0 : c.r === 14 ? 1 : c.r);
 const total = (h: Card[]) => h.reduce((s, c) => s + val(c), 0) % 10;
 
 export default function Baccarat({ onBack }: { onBack: () => void }) {
-  const { placeBet, settle } = useStore();
+  const { placeBet, settle, takeControl } = useStore();
   const [bet, setBet] = useState(10);
   const [side, setSide] = useState<Side>("player");
   const [p, setP] = useState<Card[]>([]);
@@ -19,23 +20,27 @@ export default function Baccarat({ onBack }: { onBack: () => void }) {
 
   const play = () => {
     if (!placeBet(bet)) return;
-    const d = deck(8);
-    const ph = [d.pop()!, d.pop()!], bh = [d.pop()!, d.pop()!];
-    let pt = total(ph), bt = total(bh);
-    if (pt < 8 && bt < 8) {
-      let third: Card | null = null;
-      if (pt <= 5) { third = d.pop()!; ph.push(third); }
-      bt = total(bh);
-      const t = third ? val(third) : -1;
-      const bankerDraws = third === null ? bt <= 5
-        : bt <= 2 || (bt === 3 && t !== 8) || (bt === 4 && t >= 2 && t <= 7) || (bt === 5 && t >= 4 && t <= 7) || (bt === 6 && (t === 6 || t === 7));
-      if (bankerDraws) bh.push(d.pop()!);
-    }
-    pt = total(ph); bt = total(bh);
-    const winner: Side = pt > bt ? "player" : bt > pt ? "banker" : "tie";
-    let payout = 0;
-    if (winner === "tie") payout = side === "tie" ? bet * 9 : bet; // Einsatz zurück bei Gleichstand
-    else if (winner === side) payout = side === "banker" ? round2(bet * 1.95) : bet * 2;
+    const deal = () => {
+      const d = deck(8);
+      const ph = [d.pop()!, d.pop()!], bh = [d.pop()!, d.pop()!];
+      let pt = total(ph), bt = total(bh);
+      if (pt < 8 && bt < 8) {
+        let third: Card | null = null;
+        if (pt <= 5) { third = d.pop()!; ph.push(third); }
+        bt = total(bh);
+        const t = third ? val(third) : -1;
+        const bankerDraws = third === null ? bt <= 5
+          : bt <= 2 || (bt === 3 && t !== 8) || (bt === 4 && t >= 2 && t <= 7) || (bt === 5 && t >= 4 && t <= 7) || (bt === 6 && (t === 6 || t === 7));
+        if (bankerDraws) bh.push(d.pop()!);
+      }
+      pt = total(ph); bt = total(bh);
+      const winner: Side = pt > bt ? "player" : bt > pt ? "banker" : "tie";
+      let payout = 0;
+      if (winner === "tie") payout = side === "tie" ? bet * 9 : bet; // Einsatz zurück bei Gleichstand
+      else if (winner === side) payout = side === "banker" ? round2(bet * 1.95) : bet * 2;
+      return { ph, bh, pt, bt, winner, payout };
+    };
+    const { ph, bh, pt, bt, winner, payout } = forced(takeControl(), deal, (x) => kindOf(bet, x.payout));
     setP(ph); setB(bh);
     const names = { player: "Spieler", banker: "Bank", tie: "Gleichstand" };
     setRes({ bet, payout, text: `${names[winner]} gewinnt · ${pt} zu ${bt}` });

@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useStore } from "../store";
+import { forced } from "../lib/control";
 import { rand, round2 } from "../lib/rng";
 import { play } from "../lib/sound";
 import { Action, BetInput, GameShell, Outcome, useBetGuard } from "../components/ui";
 
 export default function Dice({ onBack }: { onBack: () => void }) {
-  const { placeBet, settle, edge } = useStore();
+  const { placeBet, settle, edgeFor, takeControl } = useStore();
+  const edge = edgeFor("dice");
   const [bet, setBet] = useState(10);
   const [target, setTarget] = useState(50);
   const [over, setOver] = useState(true);
@@ -22,7 +24,8 @@ export default function Dice({ onBack }: { onBack: () => void }) {
     setRolling(true);
     setRes(null);
     for (let i = 0; i < 6; i++) setTimeout(() => play("tick"), i * 65);
-    const r = Math.floor(rand() * 10000) / 100; // 0.00–99.99
+    const ctrl = takeControl();
+    const r = forced(ctrl, () => Math.floor(rand() * 10000) / 100, (x) => ((over ? x > target : x < target) ? "win" : "loss")); // 0.00–99.99
     setTimeout(() => {
       const win = over ? r > target : r < target;
       const payout = win ? round2(bet * mult) : 0;

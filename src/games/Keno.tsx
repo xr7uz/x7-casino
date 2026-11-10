@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useStore } from "../store";
+import { forced, kindOf } from "../lib/control";
 import { binom, round2, shuffle } from "../lib/rng";
 import { play } from "../lib/sound";
 import { Action, BetInput, GameShell, Outcome, useBetGuard } from "../components/ui";
@@ -18,7 +19,8 @@ function paytable(picks: number, edge: number) {
 }
 
 export default function Keno({ onBack }: { onBack: () => void }) {
-  const { placeBet, settle, edge } = useStore();
+  const { placeBet, settle, edgeFor, takeControl } = useStore();
+  const edge = edgeFor("keno");
   const [bet, setBet] = useState(10);
   const [picks, setPicks] = useState<number[]>([]);
   const [drawn, setDrawn] = useState<number[]>([]);
@@ -35,7 +37,8 @@ export default function Keno({ onBack }: { onBack: () => void }) {
   const quick = () => { if (!busy) { setDrawn([]); setPicks(shuffle(Array.from({ length: POOL }, (_, i) => i + 1)).slice(0, 6)); } };
   const play = () => {
     if (!picks.length || !placeBet(bet)) return;
-    const d = shuffle(Array.from({ length: POOL }, (_, i) => i + 1)).slice(0, DRAW);
+    const d = forced(takeControl(), () => shuffle(Array.from({ length: POOL }, (_, i) => i + 1)).slice(0, DRAW),
+      (x) => kindOf(1, pay[x.filter((n) => picks.includes(n)).length]));
     setBusy(true); setDrawn([]); setRes(null);
     d.forEach((n, i) => setTimeout(() => { setDrawn((x) => [...x, n]); play(picks.includes(n) ? "reveal" : "tick"); }, 120 * (i + 1)));
     setTimeout(() => {

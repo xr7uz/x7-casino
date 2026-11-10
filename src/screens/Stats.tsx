@@ -1,10 +1,12 @@
 import { useStore } from "../store";
 import { gameById } from "../games/registry";
+import { achievements, levelOf } from "../lib/progress";
 
 export function Stats() {
   const { s, player, fmt } = useStore();
   const mine = s.history.filter((h) => h.player === player.id);
   const net = player.returned - player.wagered;
+  const lv = levelOf(player);
   // Verlauf des Guthabens über die letzten Runden (rückwärts rekonstruiert)
   const recent = mine.slice(0, 60).reverse();
   let bal = player.balance - recent.reduce((a, h) => a + (h.payout - h.bet), 0);
@@ -27,6 +29,25 @@ export function Stats() {
           <div><span>Größter Gewinn</span><b>{fmt(player.biggestWin)}</b></div>
         </div>
       </section>
+      <div className="card level">
+        <div className="level__head">
+          <span className="level__badge">{lv.level}</span>
+          <span><b>Level {lv.level} · {lv.rank}</b><small>{lv.xp.toLocaleString("de-DE")} XP · noch {lv.toNext.toLocaleString("de-DE")} bis Level {lv.level + 1}</small></span>
+        </div>
+        <div className="room__progress"><i style={{ width: `${Math.round(lv.progress * 100)}%` }} /></div>
+      </div>
+
+      <div className="card">
+        <h2 className="sec sec--in">Erfolge · {achievements.filter((a) => a.done(player)).length}/{achievements.length}</h2>
+        <ul className="ach">
+          {achievements.map((a) => {
+            const ok = a.done(player);
+            const Icon = a.icon;
+            return <li key={a.id} className={ok ? "is-done" : ""}><span className="ach__icon"><Icon /></span><b>{a.name}</b><small>{a.desc}</small></li>;
+          })}
+        </ul>
+      </div>
+
       {series.length > 2 && (
         <div className="card">
           <h2 className="sec sec--in">Guthaben, letzte {recent.length} Runden</h2>

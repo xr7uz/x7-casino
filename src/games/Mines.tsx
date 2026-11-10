@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { LuGem, LuBomb } from "react-icons/lu";
 import { useStore } from "../store";
 import { round2, shuffle } from "../lib/rng";
@@ -14,13 +14,15 @@ export function minesMult(mines: number, picks: number, edge: number) {
 }
 
 export default function Mines({ onBack }: { onBack: () => void }) {
-  const { placeBet, settle, edge } = useStore();
+  const { placeBet, settle, edgeFor, takeControl } = useStore();
+  const edge = edgeFor("mines");
   const [bet, setBet] = useState(10);
   const [mines, setMines] = useState(3);
   const [board, setBoard] = useState<boolean[] | null>(null); // true = Mine
   const [open, setOpen] = useState<number[]>([]);
   const [over, setOver] = useState(false);
   const [res, setRes] = useState<{ bet: number; payout: number } | null>(null);
+  const ctrl = useRef<"win" | "loss" | null>(null);
   const { done } = useBetGuard();
   const playing = board && !over;
   const cur = minesMult(mines, open.length, edge);
@@ -28,12 +30,19 @@ export default function Mines({ onBack }: { onBack: () => void }) {
 
   const start = () => {
     if (!placeBet(bet)) return;
+    ctrl.current = takeControl();
     setBoard(shuffle(Array.from({ length: N }, (_, i) => i < mines)));
     setOpen([]); setOver(false); setRes(null);
   };
   const pick = (i: number) => {
     if (!playing || open.includes(i)) return;
-    if (board![i]) {
+    // Vorgabe: Minen unter noch verdeckten Feldern umlegen
+    const b = board!.slice();
+    const hidden = b.map((_, k) => k).filter((k) => k !== i && !open.includes(k));
+    if (ctrl.current === "win" && b[i]) { const k = hidden.find((x) => !b[x]); if (k !== undefined) { b[k] = true; b[i] = false; } }
+    if (ctrl.current === "loss" && !b[i]) { const k = hidden.find((x) => b[x]); if (k !== undefined) { b[k] = false; b[i] = true; } }
+    if (b.some((v, k) => v !== board![k])) setBoard(b);
+    if (b[i]) {
       tap("heavy"); play("boom");
       setOpen((o) => [...o, i]); setOver(true);
       setRes({ bet, payout: 0 }); settle("mines", bet, 0);

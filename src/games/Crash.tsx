@@ -8,7 +8,8 @@ import { play, riserSet, riserStart, riserStop } from "../lib/sound";
 type Phase = "idle" | "flying" | "crashed" | "cashed";
 
 export default function Crash({ onBack }: { onBack: () => void }) {
-  const { placeBet, settle, edge } = useStore();
+  const { placeBet, settle, edgeFor, takeControl } = useStore();
+  const edge = edgeFor("crash");
   const [bet, setBet] = useState(10);
   const [auto, setAuto] = useState(2);
   const [phase, setPhase] = useState<Phase>("idle");
@@ -35,7 +36,10 @@ export default function Crash({ onBack }: { onBack: () => void }) {
     if (!placeBet(bet)) return;
     // Absturzpunkt: P(Crash ≥ x) = (1 − Hausvorteil) / x
     const u = rand();
+    const ctrl = takeControl();
     crashAt.current = Math.max(1, Math.floor(((1 - edge) / (1 - u)) * 100) / 100);
+    if (ctrl === "win") crashAt.current = round2(Math.max(auto > 1 ? auto * (1.15 + rand()) : 0, 4 + rand() * 30));
+    if (ctrl === "loss") crashAt.current = round2(auto > 1 ? Math.max(1, Math.min(auto - 0.05, 1 + rand() * 0.4)) : 1 + rand() * 0.06);
     cashed.current = false;
     pts.current = [];
     setRes(null);

@@ -9,7 +9,8 @@ const pHigher = (r: number) => (14 - r) / 13;
 const pLower = (r: number) => (r - 2) / 13;
 
 export default function HiLo({ onBack }: { onBack: () => void }) {
-  const { placeBet, settle, edge } = useStore();
+  const { placeBet, settle, edgeFor, takeControl } = useStore();
+  const edge = edgeFor("hilo");
   const [bet, setBet] = useState(10);
   const [card, setCard] = useState<Card | null>(null);
   const [trail, setTrail] = useState<Card[]>([]);
@@ -17,11 +18,13 @@ export default function HiLo({ onBack }: { onBack: () => void }) {
   const [active, setActive] = useState(false);
   const [res, setRes] = useState<{ bet: number; payout: number; text?: string } | null>(null);
   const d = useRef<Card[]>(deck(4));
+  const ctrl = useRef<"win" | "loss" | null>(null);
   const { done } = useBetGuard();
   const draw = () => { if (d.current.length < 10) d.current = deck(4); return d.current.pop()!; };
 
   const start = () => {
     if (!placeBet(bet)) return;
+    ctrl.current = takeControl();
     const c = draw();
     setCard(c); setTrail([c]); setMult(1); setActive(true); setRes(null);
   };
@@ -29,8 +32,10 @@ export default function HiLo({ onBack }: { onBack: () => void }) {
     if (!card) return;
     const p = hi ? pHigher(card.r) : pLower(card.r);
     if (p <= 0) return;
-    const n = draw();
-    const ok = hi ? n.r > card.r : n.r < card.r;
+    const good = (x: Card) => (hi ? x.r > card.r : x.r < card.r);
+    let n = draw();
+    if (ctrl.current) for (let k = 0; k < 60 && (ctrl.current === "win" ? !good(n) : good(n) || n.r === card.r); k++) n = draw();
+    const ok = good(n);
     setTrail((t) => [...t, n].slice(-6)); setCard(n);
     if (n.r === card.r) return; // gleiche Karte: nichts passiert, weiter
     if (!ok) { setActive(false); setRes({ bet, payout: 0, text: "Falsch geraten" }); settle("hilo", bet, 0); return; }

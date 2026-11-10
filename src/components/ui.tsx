@@ -9,7 +9,12 @@ import { play } from "../lib/sound";
 /** Rahmen jedes Spiels: Kopfzeile mit Zurück, Titel, Favorit und Regeln. */
 export function GameShell({ id, onBack, rules, children }: { id: string; onBack: () => void; rules: string; children: ReactNode }) {
   const g = gameById(id);
-  const { s, toggleFav, edge } = useStore();
+  const { s, toggleFav, edgeFor, controlActive } = useStore();
+  const edge = edgeFor(id);
+  const ctl = s.settings.control;
+  const ctlText = ctl.pos < ctl.script.length || (ctl.repeat && ctl.script.length)
+    ? `Sequenz aktiv · nächste Runde: ${ctl.script[ctl.pos % ctl.script.length] === "W" ? "Gewinn" : "Verlust"}`
+    : ctl.mode === "win" ? "Alles gewinnen ist aktiv" : "Alles verlieren ist aktiv";
   const [showRules, setShowRules] = useState(false);
   const fav = s.favorites.includes(id);
   const Icon = g.icon;
@@ -27,6 +32,7 @@ export function GameShell({ id, onBack, rules, children }: { id: string; onBack:
         <button className={`iconbtn ${fav ? "is-on" : ""}`} onClick={() => toggleFav(id)} aria-label="Favorit"><LuStar /></button>
         <button className="iconbtn" onClick={() => setShowRules((v) => !v)} aria-label="Regeln"><LuInfo /></button>
       </header>
+      {controlActive && <div className="ctlbar" role="status">{ctlText}</div>}
       {showRules && <div className="rules">{rules}</div>}
       <div className="game__body">{children}</div>
     </div>

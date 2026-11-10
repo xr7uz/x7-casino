@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { LuBird, LuCar, LuFlag } from "react-icons/lu";
 import { useStore } from "../store";
 import { rand, round2 } from "../lib/rng";
@@ -11,7 +11,8 @@ const crashP: Record<Diff, number> = { easy: 1 / 25, mid: 3 / 25, hard: 6 / 25 }
 const LANES = 10;
 
 export default function Chicken({ onBack }: { onBack: () => void }) {
-  const { placeBet, settle, edge } = useStore();
+  const { placeBet, settle, edgeFor, takeControl } = useStore();
+  const edge = edgeFor("chicken");
   const [bet, setBet] = useState(10);
   const [diff, setDiff] = useState<Diff>("mid");
   const [pos, setPos] = useState(-1); // -1 = noch nicht gestartet, 0 = Gehweg
@@ -19,13 +20,15 @@ export default function Chicken({ onBack }: { onBack: () => void }) {
   const [active, setActive] = useState(false);
   const [res, setRes] = useState<{ bet: number; payout: number } | null>(null);
   const { done } = useBetGuard();
+  const ctrl = useRef<"win" | "loss" | null>(null);
   const q = 1 - crashP[diff];
   const multAt = (lane: number) => (lane <= 0 ? 1 : round2((1 - edge) / Math.pow(q, lane)));
 
-  const start = () => { if (!placeBet(bet)) return; setPos(0); setDead(null); setActive(true); setRes(null); };
+  const start = () => { if (!placeBet(bet)) return; ctrl.current = takeControl(); setPos(0); setDead(null); setActive(true); setRes(null); };
   const step = () => {
     const next = pos + 1;
-    if (rand() < crashP[diff]) {
+    const crash = ctrl.current === "win" ? false : ctrl.current === "loss" ? true : rand() < crashP[diff];
+    if (crash) {
       tap("heavy"); play("boom"); setDead(next); setActive(false); setRes({ bet, payout: 0 }); settle("chicken", bet, 0); return;
     }
     tap(); play("reveal"); setPos(next);

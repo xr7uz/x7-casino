@@ -19,6 +19,10 @@ export type Player = {
   returned: number;
   biggestWin: number;
   tourRounds: number;
+  wins?: number;
+  maxMult?: number;
+  maxBet?: number;
+  played?: string[];
 };
 export type HistoryItem = { t: number; player: string; game: string; bet: number; payout: number };
 export type Settings = {
@@ -29,7 +33,9 @@ export type Settings = {
   smooth: boolean; // Premium Smooth Scrolling
   sound: boolean;
   volume: number; // 0–1
-  edge: number; // Hausvorteil in Prozent für mathematische Spiele (0–10)
+  edge: number; // Hausvorteil in Prozent für mathematische Spiele (−5 bis 10, negativ = Spielervorteil)
+  edgeByGame: Record<string, number>; // eigene Quote pro Spiel (überschreibt den Standard)
+  control: { mode: "off" | "win" | "loss"; script: ("W" | "L")[]; pos: number; repeat: boolean };
   onboarded: boolean;
 };
 export type Party = {
@@ -60,6 +66,7 @@ type State = {
   history: HistoryItem[];
   turnRounds: number;
   lastBonus: string;
+  unlocked?: string[];
 };
 
 export const START_BALANCE = 1000;
@@ -76,7 +83,7 @@ function initial(): State {
     online: null,
     players: [p],
     activeId: p.id,
-    settings: { theme: "noir", currency: "◆", haptics: true, smooth: true, sound: true, volume: 0.7, training: false, edge: 3, onboarded: false },
+    settings: { theme: "noir", currency: "◆", haptics: true, smooth: true, sound: true, volume: 0.7, training: false, edge: 3, edgeByGame: {}, control: { mode: "off", script: [], pos: 0, repeat: false }, onboarded: false },
     party: { enabled: false, roundsPerTurn: 1, tournament: { active: false, roundsEach: 10, startBalance: 1000, finished: false } },
     favorites: [],
     history: [],
@@ -99,6 +106,10 @@ type Ctx = {
   player: Player;
   fmt: (n: number) => string;
   edge: number;
+  edgeFor: (game: string) => number;
+  /** Vorgabe für die nächste Runde abholen (verbraucht einen Sequenz-Schritt) */
+  takeControl: () => "win" | "loss" | null;
+  controlActive: boolean;
   placeBet: (amount: number) => boolean;
   settle: (game: string, bet: number, payout: number) => void;
   refill: () => void;
@@ -119,6 +130,7 @@ type Ctx = {
   endTournament: () => void;
   resetStats: () => void;
   clearHistory: () => void;
+  markUnlocked: (ids: string[]) => void;
   locked: boolean;
   roundsDone: boolean;
   createRoom: (name: string, rounds: number, start: number) => void;
@@ -132,6 +144,8 @@ const StoreCtx = createContext<Ctx | null>(null);
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [s, setS] = useState<State>(load);
   const saveTimer = useRef(0);
+  const ctrlRef = useRef(s.settings.control);
+  ctrlRef.current = s.settings.control;
 
   useEffect(() => {
     window.clearTimeout(saveTimer.current);
@@ -168,7 +182,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     s,
     player,
     fmt,
-    edge: Math.max(0, Math.min(10, s.settings.edge)) / 100,
+    edge: Math.max(-5, Math.min(10, s.settings.edge)) / 100,
+    edgeFor: (game) => {
+      const v = s.settings.edgeByGame?.[game];
+      return Math.max(-5, Math.min(10, v ?? s.settings.edge)) / 100;
+    },
+    controlActive: !locked && (s.settings.control.mode !== "off" || s.settings.control.pos < s.settings.control.script.length || (s.settings.control.repeat && s.settings.control.script.length > 0)),
+    takeControl: () => {
+      if (locked) return null; // im Turnier immer fair
+      const c = ctrlRef.current;
+      if (c.script.length && (c.pos < c.script.length || c.repeat)) {
+        const i = c.pos % c.script.length;
+        const step = c.script[i];
+        const next = { ...c, pos: c.repeat ? (i + 1) % c.script.length : c.pos + 1 };
+        ctrlRef.current = next;
+        setS((st) => ({ ...st, settings: { ...st.settings, control: next } }));
+        return step === "W" ? "win" : "loss";
+      }
+      return c.mode === "off" ? null : c.mode;
+    },
     locked,
     roundsDone,
     placeBet: (amount) => {
@@ -198,6 +230,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           wagered: p.wagered + bet,
           returned: p.returned + payout,
           biggestWin: Math.max(p.biggestWin, payout - bet),
+          wins: (p.wins ?? 0) + (payout > bet ? 1 : 0),
+          maxMult: Math.max(p.maxMult ?? 0, bet > 0 ? payout / bet : 0),
+          maxBet: Math.max(p.maxBet ?? 0, bet),
+          played: (p.played ?? []).includes(game) ? p.played : [...(p.played ?? []), game],
           tourRounds: st.party.tournament.active ? p.tourRounds + 1 : p.tourRounds,
         }));
         next = { ...next, history: [{ t: Date.now(), player: st.activeId, game, bet, payout }, ...st.history].slice(0, 300), turnRounds: st.turnRounds + 1 };
@@ -255,6 +291,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     endTournament: () => setS((st) => ({ ...st, party: { ...st.party, tournament: { ...st.party.tournament, active: false, finished: false } }, turnRounds: 0 })),
     resetStats: () => setS((st) => ({ ...st, players: st.players.map((p) => ({ ...p, rounds: 0, wagered: 0, returned: 0, biggestWin: 0 })) })),
     clearHistory: () => setS((st) => ({ ...st, history: [] })),
+    markUnlocked: (ids) => setS((st) => ({ ...st, unlocked: [...new Set([...(st.unlocked ?? []), ...ids])] })),
     createRoom: (name, rounds, start) => setS((st) => ({
       ...st,
       online: { code: newRoomCode(), rounds, start, name: name.trim().slice(0, 16) || "Ich", balance: start, played: 0, wagered: 0, returned: 0, finished: false, results: [], host: true },

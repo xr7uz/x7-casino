@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useStore } from "../store";
+import { forced, kindOf } from "../lib/control";
 import { randInt, round2 } from "../lib/rng";
 import { play } from "../lib/sound";
 import { Action, BetInput, GameShell, Outcome, useBetGuard } from "../components/ui";
@@ -14,7 +15,8 @@ const layouts: Record<Risk, number[]> = {
 const palette = ["#800021", "#881144", "#c24366", "#ff69b4", "#ffe4d8"];
 
 export default function Wheel({ onBack }: { onBack: () => void }) {
-  const { placeBet, settle, edge } = useStore();
+  const { placeBet, settle, edgeFor, takeControl } = useStore();
+  const edge = edgeFor("wheel");
   const [bet, setBet] = useState(10);
   const [risk, setRisk] = useState<Risk>("mid");
   const [angle, setAngle] = useState(0);
@@ -31,7 +33,7 @@ export default function Wheel({ onBack }: { onBack: () => void }) {
 
   const spin = () => {
     if (!placeBet(bet)) return;
-    const i = randInt(0, SEG - 1);
+    const i = forced(takeControl(), () => randInt(0, SEG - 1), (x) => kindOf(1, segs[x]));
     const seg = 360 / SEG;
     setSpinning(true); setRes(null); play("spin");
     setAngle((a) => a - (a % 360) + 360 * 5 + (360 - i * seg));

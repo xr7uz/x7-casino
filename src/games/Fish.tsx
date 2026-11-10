@@ -19,7 +19,8 @@ const KINDS = [
 const W = 360, H = 460;
 
 export default function Fish({ onBack }: { onBack: () => void }) {
-  const { placeBet, settle, edge } = useStore();
+  const { placeBet, settle, edgeFor, takeControl } = useStore();
+  const edge = edgeFor("fish");
   const [bet, setBet] = useState(5);
   const [stats, setStats] = useState({ shots: 0, catches: 0, net: 0 });
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -29,8 +30,8 @@ export default function Fish({ onBack }: { onBack: () => void }) {
   const aim = useRef(-Math.PI / 2);
   const betRef = useRef(bet);
   betRef.current = bet;
-  const api = useRef({ placeBet, settle, edge });
-  api.current = { placeBet, settle, edge };
+  const api = useRef({ placeBet, settle, edge, takeControl });
+  api.current = { placeBet, settle, edge, takeControl };
 
   useEffect(() => {
     const cv = canvas.current!;
@@ -73,7 +74,7 @@ export default function Fish({ onBack }: { onBack: () => void }) {
       fish.current = fish.current.filter((f) => f.x > -120 && f.x < W + 120);
       for (const f of fish.current) { f.x += f.vx * dt; drawFish(f, t); }
       // Kugeln
-      const { settle: st, edge: e } = api.current;
+      const { settle: st, edge: e, takeControl: tc } = api.current;
       bullets.current = bullets.current.filter((b) => {
         b.x += b.vx * dt; b.y += b.vy * dt;
         if (b.x < 4 || b.x > W - 4) b.vx *= -1;
@@ -81,7 +82,8 @@ export default function Fish({ onBack }: { onBack: () => void }) {
         const hit = fish.current.find((f) => Math.hypot(f.x - b.x, f.y - b.y) < f.r);
         if (hit) {
           const p = Math.min(1, (1 - e) / hit.mult);
-          const caught = rand() < p;
+          const c = tc();
+          const caught = c === "win" ? true : c === "loss" ? false : rand() < p;
           const payout = caught ? round2(b.bet * hit.mult) : 0;
           st("fish", b.bet, payout);
           setStats((s) => ({ shots: s.shots + 1, catches: s.catches + (caught ? 1 : 0), net: round2(s.net + payout - b.bet) }));

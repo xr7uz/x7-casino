@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useStore } from "../store";
+import { forced, kindOf } from "../lib/control";
 import { randInt } from "../lib/rng";
 import { Action, GameShell, Outcome, useBetGuard } from "../components/ui";
 import { tap } from "../lib/haptics";
@@ -25,7 +26,7 @@ const outside: { k: BetKey; label: string; pays: number; hit: (n: number) => boo
 const chips = [1, 5, 10, 25, 100];
 
 export default function Roulette({ onBack }: { onBack: () => void }) {
-  const { placeBet, settle, player, fmt } = useStore();
+  const { placeBet, settle, player, fmt, takeControl } = useStore();
   const [chip, setChip] = useState(10);
   const [bets, setBets] = useState<Record<BetKey, number>>({});
   const [spinning, setSpinning] = useState(false);
@@ -41,7 +42,15 @@ export default function Roulette({ onBack }: { onBack: () => void }) {
   };
   const spin = () => {
     if (!total || !placeBet(total)) return;
-    const n = wheel[randInt(0, 36)];
+    const payFor = (n: number) => {
+      let pay = 0;
+      for (const [k, amt] of Object.entries(bets)) {
+        if (k.startsWith("n:")) { if (Number(k.slice(2)) === n) pay += amt * 36; }
+        else { const o = outside.find((x) => x.k === k)!; if (o.hit(n)) pay += amt * o.pays; }
+      }
+      return pay;
+    };
+    const n = forced(takeControl(), () => wheel[randInt(0, 36)], (x) => kindOf(total, payFor(x)));
     const idx = wheel.indexOf(n);
     const seg = 360 / 37;
     setSpinning(true); setRes(null); play("spin");

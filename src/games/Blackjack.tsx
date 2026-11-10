@@ -26,7 +26,7 @@ function hint(player: Card[], dealerUp: Card, canDouble: boolean): string {
 }
 
 export default function Blackjack({ onBack }: { onBack: () => void }) {
-  const { placeBet, settle, s } = useStore();
+  const { placeBet, settle, s, takeControl } = useStore();
   const [bet, setBet] = useState(10);
   const [stake, setStake] = useState(10);
   const [phase, setPhase] = useState<Phase>("bet");
@@ -34,6 +34,15 @@ export default function Blackjack({ onBack }: { onBack: () => void }) {
   const [dl, setDl] = useState<Card[]>([]);
   const [res, setRes] = useState<{ bet: number; payout: number; text: string } | null>(null);
   const shoe = useRef<Card[]>(deck(6));
+  const ctrl = useRef<"win" | "loss" | null>(null);
+  /** Nimmt eine Karte aus dem Schlitten, die die Bedingung erfüllt (sonst irgendeine) */
+  const drawWhere = (ok: (c: Card) => boolean) => {
+    if (shoe.current.length < 30) shoe.current = deck(6);
+    const idx: number[] = [];
+    shoe.current.forEach((c, k) => { if (ok(c)) idx.push(k); });
+    const i = idx.length ? idx[Math.floor(Math.random() * idx.length)] : shoe.current.length - 1;
+    return shoe.current.splice(i, 1)[0];
+  };
   const { done } = useBetGuard();
 
   const draw = () => {
@@ -45,7 +54,20 @@ export default function Blackjack({ onBack }: { onBack: () => void }) {
     let dd = d;
     const pv = bjValue(p).total;
     if (pv <= 21 && !natural) {
-      while (bjValue(dd).total < 17) dd = [...dd, draw()];
+      if (ctrl.current) {
+        // Dealer-Hand passend zur Vorgabe ziehen (Hand gegen zufällige Karten neu auslosen)
+        for (let k = 0; k < 400; k++) {
+          let t = [d[0], drawWhere(() => true)];
+          const extra: Card[] = [];
+          while (bjValue(t).total < 17) { const c = drawWhere(() => true); extra.push(c); t = [...t, c]; }
+          const dv = bjValue(t).total;
+          const good = ctrl.current === "win" ? dv > 21 || dv < pv : dv <= 21 && dv > pv;
+          if (good) { dd = t; break; }
+          shoe.current.push(t[1], ...extra);
+        }
+      } else {
+        while (bjValue(dd).total < 17) dd = [...dd, draw()];
+      }
     }
     const dv = bjValue(dd).total;
     let payout = 0, text = "";
@@ -63,19 +85,25 @@ export default function Blackjack({ onBack }: { onBack: () => void }) {
 
   const deal = () => {
     if (!placeBet(bet)) return;
-    const p = [draw(), draw()], d = [draw(), draw()];
+    ctrl.current = takeControl();
+    let p = [draw(), draw()], d = [draw(), draw()];
+    // Vorgabe: kein Blackjack für den Spieler bei „Verlieren“, keiner für den Dealer bei „Gewinnen“
+    for (let k = 0; k < 50 && ctrl.current === "loss" && bjValue(p).total === 21; k++) p = [draw(), draw()];
+    for (let k = 0; k < 50 && ctrl.current === "win" && bjValue(d).total === 21; k++) d = [draw(), draw()];
     setPl(p); setDl(d); setStake(bet); setRes(null); setPhase("play");
     if (bjValue(p).total === 21) finish(p, d, bet, true);
   };
   const hit = () => {
-    const p = [...pl, draw()];
+    const cur = bjValue(pl).total;
+    const c = ctrl.current === "win" ? drawWhere((x) => bjValue([...pl, x]).total <= 21) : ctrl.current === "loss" && cur >= 12 ? drawWhere((x) => bjValue([...pl, x]).total > 21) : draw();
+    const p = [...pl, c];
     setPl(p);
     if (bjValue(p).total >= 21) finish(p, dl, stake);
   };
   const stand = () => finish(pl, dl, stake);
   const double = () => {
     if (!placeBet(stake)) return;
-    const p = [...pl, draw()];
+    const p = [...pl, ctrl.current === "win" ? drawWhere((x) => bjValue([...pl, x]).total <= 21) : draw()];
     setPl(p); setStake(stake * 2);
     finish(p, dl, stake * 2);
   };

@@ -18,7 +18,7 @@ export function Lobby({ open }: { open: (id: string) => void }) {
     <div className="screen lobby">
       <section className="hero">
         <p className="hero__kick">X7 Casino · Spielgeld</p>
-        <h1 className="hero__title">16 Spiele.<br /><span>Null Risiko.</span></h1>
+        <h1 className="hero__title">{games.length} Spiele.<br /><span>Null Risiko.</span></h1>
         <div className="kpis">
           <div><span>Runden</span><b>{player.rounds}</b></div>
           <div><span>Eingesetzt</span><b>{fmt(player.wagered)}</b></div>
@@ -50,7 +50,7 @@ export function Lobby({ open }: { open: (id: string) => void }) {
 
 /** Spielkacheln – eigene Komponente, damit sie bei Guthaben-Änderungen nicht neu einfliegen */
 function Grid({ items, open }: { items: typeof games; open: (id: string) => void }) {
-  const { s, edge, toggleFav } = useStore();
+  const { s, edgeFor, toggleFav } = useStore();
   return (
     <div className="ggrid">
       {items.map((g) => {
@@ -62,7 +62,7 @@ function Grid({ items, open }: { items: typeof games; open: (id: string) => void
               <span className="gcard__icon"><Icon /></span>
               <span className="gcard__name">{g.name}</span>
               <span className="gcard__desc">{g.desc}</span>
-              <span className="gcard__meta">{g.edgeLabel(edge)}<LuArrowRight /></span>
+              <span className="gcard__meta">{g.edgeLabel(edgeFor(g.id))}<LuArrowRight /></span>
             </button>
             <button className={`gcard__fav ${fav ? "is-on" : ""}`} onClick={() => { play("chip"); toggleFav(g.id); }} aria-label={fav ? "Favorit entfernen" : "Als Favorit"}><LuStar /></button>
           </div>

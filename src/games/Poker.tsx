@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { useStore } from "../store";
+import { forced } from "../lib/control";
 import { deck, evalHand, handNames, type Card } from "../lib/cards";
 import { rand, round2, shuffle } from "../lib/rng";
 import { Action, BetInput, GameShell, Outcome, PlayingCard, useBetGuard } from "../components/ui";
@@ -30,7 +31,7 @@ function equity(hole: Card[], board: Card[], opponents: number, sims = 220): num
 }
 
 export default function Poker({ onBack }: { onBack: () => void }) {
-  const { placeBet, settle, s } = useStore();
+  const { placeBet, settle, s, takeControl } = useStore();
   const [bet, setBet] = useState(10);
   const [seats, setSeats] = useState<Seat[]>([]);
   const [board, setBoard] = useState<Card[]>([]);
@@ -41,6 +42,7 @@ export default function Poker({ onBack }: { onBack: () => void }) {
   const d = useRef<Card[]>([]);
   const myPut = useRef(0);
   const unit = useRef(10);
+  const ctrl = useRef<"win" | "loss" | null>(null);
   const { done } = useBetGuard();
 
   const pot = seats.reduce((a, x) => a + x.put, 0);
@@ -50,7 +52,16 @@ export default function Poker({ onBack }: { onBack: () => void }) {
     const ante = bet;
     if (!placeBet(ante)) return;
     unit.current = bet; myPut.current = ante;
-    d.current = deck(1);
+    ctrl.current = takeControl();
+    // Vorgabe: Karten so auslosen, dass du am Showdown gewinnst bzw. verlierst
+    const wins = (dk: Card[]) => {
+      const c = dk.slice();
+      const me = [c.pop()!, c.pop()!], b1 = [c.pop()!, c.pop()!], b2 = [c.pop()!, c.pop()!];
+      const board5 = [c[c.length - 1], c[c.length - 2], c[c.length - 3], c[c.length - 4], c[c.length - 5]];
+      const m = evalHand([...me, ...board5]).score;
+      return m > evalHand([...b1, ...board5]).score && m > evalHand([...b2, ...board5]).score;
+    };
+    d.current = forced(ctrl.current, () => deck(1), (dk) => (wins(dk) ? "win" : "loss"));
     const take = () => d.current.pop()!;
     setSeats([
       { name: "Du", hole: [take(), take()], folded: false, put: ante, bot: false },
@@ -102,7 +113,7 @@ export default function Poker({ onBack }: { onBack: () => void }) {
         return { ...x, last: "schiebt" };
       }
       if (eq > 0.78 && raise === 0) { raise = unit.current; return { ...x, put: x.put + amount + unit.current, last: "erhöht" }; }
-      if (eq > 0.3 || bluff) return { ...x, put: x.put + amount, last: "geht mit" };
+      if (eq > 0.3 || bluff || ctrl.current === "loss") return { ...x, put: x.put + amount, last: "geht mit" };
       return { ...x, folded: true, last: "passt" };
     });
     return { st: out, raise };

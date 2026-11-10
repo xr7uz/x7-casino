@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useStore } from "../store";
+import { forced, kindOf } from "../lib/control";
 import { pickWeighted, rand, round2 } from "../lib/rng";
 import { play } from "../lib/sound";
 import { Action, BetInput, GameShell, Outcome, useBetGuard } from "../components/ui";
@@ -17,7 +18,8 @@ const ITEMS = [
 const rarClass: Record<string, string> = { Gewöhnlich: "c", Selten: "r", Episch: "e", Legendär: "l", Mythisch: "m" };
 
 export default function Loot({ onBack }: { onBack: () => void }) {
-  const { placeBet, settle, edge } = useStore();
+  const { placeBet, settle, edgeFor, takeControl } = useStore();
+  const edge = edgeFor("loot");
   const [bet, setBet] = useState(10);
   const [strip, setStrip] = useState<number[]>([]);
   const [offset, setOffset] = useState(0);
@@ -35,7 +37,7 @@ export default function Loot({ onBack }: { onBack: () => void }) {
   const open = () => {
     if (!placeBet(bet)) return;
     const pick = () => pickWeighted(ITEMS.map((x, i) => ({ item: i, w: x.w })));
-    const win = pick();
+    const win = forced(takeControl(), pick, (x) => kindOf(1, values[x]));
     const s = Array.from({ length: 40 }, (_, i) => (i === 34 ? win : pick()));
     setStrip(s); setOffset(0); setBusy(true); setWon(null); setRes(null); play("spin");
     requestAnimationFrame(() => requestAnimationFrame(() => setOffset(34 * CELL + rand() * (CELL - 20) - (CELL - 20) / 2)));
